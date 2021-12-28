@@ -1,0 +1,69 @@
+version: '3'
+services:
+  nodered:
+    image: nodered
+    container_name: nodered
+    ports:
+      - "1880:1880"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    
+    volumes:
+      - type: volume
+        source: nodered_data
+        target: /data/nodered
+    logging:
+      driver: "json-file"
+      options: 
+        max-size: "10m"
+        max-file: "1"
+    networks:
+      - services_net
+  emqx:
+    image: emqx:4.3.8
+    container_name: emqx
+    ports: 
+      - "1883":"1883"
+      - "18083":"18083"
+    volumes:
+      -emqx-data:/var/lib/emqx
+  telegraf:
+    image: telegraf
+    container_name: telegraf
+    links:
+      - influxdb
+    volumes:
+      - ./conf/telegraf.conf:/etc/telegraf/telegraf.conf
+    environment:
+      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
+    restart: on-failure:10
+  grafana:
+    image: grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+  influxdb:
+    image: influxdb
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - /data/influxdb_data:/var/lib/influxdb:rw
+    environment:
+       # Use these same configurations parameters in your telegraf configuration, telegraf.conf.
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminadmin
+      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
+    restart: on-failure:10
+volumes:
+  nodeREDdata:
+  grafana-data:
+  influxdb_data:

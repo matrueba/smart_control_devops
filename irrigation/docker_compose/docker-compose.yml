@@ -1,0 +1,87 @@
+version: '3.2'
+services:
+  telegraf:
+    image: telegraf
+    container_name: telegraf
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
+    volumes:
+      - type: bind
+        source: ./conf/telegraf.conf
+        target: /etc/telegraf/telegraf.conf
+    environment: 
+      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
+      #- DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
+    restart: always
+    networks:
+     - services_net 
+  influxdb:
+    image: influxdb
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
+    volumes:
+      - type: bind
+        source: /data/influxdb_data
+        target: /var/lib/influxdb
+    environment: 
+       # Use these same configurations parameters in your telegraf configuration, telegraf.conf.
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminadmin
+      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
+    restart: on-failure:10
+    networks:
+      - services_net
+  emqx:
+    image: emqx/emqx:4.3.8
+    container_name: emqx
+    logging:
+      driver: "json-file"
+      options: 
+        max-size: "10m"
+        max-file: "1"
+    ports:
+      - "1883:1883"
+      - "18083:18083"
+    volumes:
+      - type: volume
+        source: emqx_data
+        target: /data/emqx
+    networks:
+      - services_net
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
+    ports:
+      - "3000:3000"
+    volumes:
+      - type: volume
+        source: grafana_data
+        target: /data/grafana
+    networks:
+      - services_net
+volumes:
+  influxdb_data:
+  emqx_data:
+  grafana_data:
+networks:
+  services_net:
+    driver: overlay
+  
