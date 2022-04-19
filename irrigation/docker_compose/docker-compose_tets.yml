@@ -1,25 +1,5 @@
 version: '3'
 services:
-  nodered:
-    image: nodered
-    container_name: nodered
-    ports:
-      - "1880:1880"
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
-    
-    volumes:
-      - type: volume
-        source: nodered_data
-        target: /data/nodered
-    logging:
-      driver: "json-file"
-      options: 
-        max-size: "10m"
-        max-file: "1"
-    networks:
-      - services_net
   emqx:
     image: emqx:4.3.8
     container_name: emqx
@@ -64,6 +44,5 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
     restart: on-failure:10
 volumes:
-  nodeREDdata:
   grafana-data:
   influxdb_data:

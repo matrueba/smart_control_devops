@@ -71,12 +71,21 @@ services:
         max-file: "1"
     ports:
       - "3000:3000"
-    volumes:
-      - type: volume
-        source: grafana_data
-        target: /data/grafana
     networks:
       - services_net
+  smart_control_api:
+    image: smart_control_api:latest
+    container_name: smart_control_api
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
+    ports:
+      - "5000:5000"
+    networks:
+      - services_net
+
 volumes:
   influxdb_data:
   emqx_data:

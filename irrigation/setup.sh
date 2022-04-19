@@ -58,6 +58,15 @@ sudo docker pull telegraf
 echo "------GET GRAFANA CONTAINER------"
 sudo docker pull grafana/grafana
 
+echo "------PULL API CONTAINER-----"
+sudo docker pull ghcr.io/matrueba/smart_control_api:master
+
+#ONLY FOR RPI PLATFORM
+#echo "------CLONE AND BUILD API-----"
+#sudo git clone git@github.com:matrueba/smart_control_api.git
+#cd smart_control_api
+#sudo docker image build -t smart_control_api .
+
 #echo "------RUN CONTAINERS-----"
 #sudo docker run -d -p 1880:1880 --name nodered -v NodeREDdata:/var/lib/nodered
 #sudo docker run -d -p 3000:3000 --name=grafana -v grafana-data:/var/lib/grafana
