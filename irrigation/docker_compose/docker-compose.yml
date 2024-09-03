@@ -1,8 +1,7 @@
-version: '3.2'
+version: '3'
 services:
   telegraf:
     image: telegraf
-    container_name: telegraf
     logging:
       driver: "json-file"
       options:
@@ -13,15 +12,21 @@ services:
         source: ./conf/telegraf.conf
         target: /etc/telegraf/telegraf.conf
     environment: 
-      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=MyInitialAdminToken0==
+      - DOCKER_INFLUXDB_INIT_ORG=myorg 
       - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
-      #- DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
-    restart: always
+    secrets:
+      - influxdb2-admin-username
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+    restart: on-failure
+    depends_on:
+      - influxdb
     networks:
      - services_net 
+
   influxdb:
     image: influxdb
-    container_name: influxdb
     ports:
       - "8086:8086"
     logging:
@@ -30,23 +35,25 @@ services:
         max-size: "10m"
         max-file: "1"
     volumes:
-      - type: bind
-        source: /data/influxdb_data
-        target: /var/lib/influxdb
+      - influxdb2_data:/var/lib/influxdb2
     environment: 
        # Use these same configurations parameters in your telegraf configuration, telegraf.conf.
       - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=adminadmin
-      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_USERNAME_FILE=/run/secrets/influxdb2-admin-username
+      - DOCKER_INFLUXDB_INIT_PASSWORD_FILE=/run/secrets/influxdb2-admin-password
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE=/run/secrets/influxdb2-admin-token
+      - DOCKER_INFLUXDB_INIT_ORG=myorg 
       - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
-    restart: on-failure:10
+    secrets:
+      - influxdb2-admin-username
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+    restart: on-failure
     networks:
       - services_net
+
   emqx:
     image: emqx/emqx:4.3.8
-    container_name: emqx
     logging:
       driver: "json-file"
       options: 
@@ -54,28 +61,17 @@ services:
         max-file: "1"
     ports:
       - "1883:1883"
+      - "8083:8083"
       - "18083:18083"
     volumes:
-      - type: volume
-        source: emqx_data
-        target: /data/emqx
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    restart: on-failure
     networks:
       - services_net
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "1"
-    ports:
-      - "3000:3000"
-    networks:
-      - services_net
+
   smart_control_api:
     image: smart_control_api:latest
-    container_name: smart_control_api
     logging:
       driver: "json-file"
       options:
@@ -83,13 +79,22 @@ services:
         max-file: "1"
     ports:
       - "5000:5000"
+    restart: on-failure
     networks:
       - services_net
 
+secrets:
+  influxdb2-admin-username:
+    file: /env/influxdb2-admin-username
+  influxdb2-admin-password:
+    file: /env/influxdb2-admin-password
+  influxdb2-admin-token:
+    file: /env/influxdb2-admin-token
+
 volumes:
-  influxdb_data:
+  influxdb2_data:
   emqx_data:
-  grafana_data:
+  emqx_log:
 networks:
   services_net:
     driver: overlay
